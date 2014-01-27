@@ -22,6 +22,7 @@ GEM
       multi_json (~> 1.0)
     ffi (1.9.3)
     fssm (0.2.10)
+    git (1.2.6)
     haml (4.0.4)
       tilt
     hike (1.2.3)
@@ -103,6 +104,7 @@ GEM
       ref
     thor (0.18.1)
     tilt (1.3.7)
+    tomparse (0.4.2)
     tzinfo (0.3.38)
     uglifier (2.1.2)
       execjs (>= 0.3.0)
@@ -114,6 +116,7 @@ PLATFORMS
 DEPENDENCIES
   bourbon
   coderay
+  git
   middleman
   middleman-blog
   middleman-gh-pages
@@ -122,3 +125,4 @@ DEPENDENCIES
   rack-google-analytics
   rake
   therubyracer
+  tomparse
