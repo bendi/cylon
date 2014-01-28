@@ -1,0 +1,130 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+
+require 'bundler'
+Bundler.setup
+
+require 'tomparse'
+require 'git'
+
+REPOS = %w(
+  https://github.com/hybridgroup/cylon-ardrone.git
+  https://github.com/hybridgroup/cylon-beaglebone.git
+  https://github.com/hybridgroup/cylon-crazyflie.git
+  https://github.com/hybridgroup/cylon-digispark.git
+  https://github.com/hybridgroup/cylon-firmata.git
+  https://github.com/hybridgroup/cylon-force.git
+  https://github.com/hybridgroup/cylon-gpio.git
+  https://github.com/hybridgroup/cylon-i2c.git
+  https://github.com/hybridgroup/cylon-joystick.git
+  https://github.com/hybridgroup/cylon-keyboard.git
+  https://github.com/hybridgroup/cylon-leapmotion.git
+  https://github.com/hybridgroup/cylon-opencv.git
+  https://github.com/hybridgroup/cylon-raspi.git
+  https://github.com/hybridgroup/cylon-spark.git
+  https://github.com/hybridgroup/cylon-sphero.git
+)
+
+BLOCK_COMMENT_REGEX = /
+  ^
+  \s*      # zero or more bits of whitespace
+  (\#.*)    # a comment character, and whatever junk comes after it
+  $        # end of string
+/x
+
+# Public: Gets the name of the repository from it's GitHub clone URI
+#
+# uri - string git clone URI to extract a name from
+#
+# Examples
+#
+#   get_repo_name "https://github.com/hybridgroup/cylon-ardrone.git"
+#   #=> "cylon-ardrone"
+#
+#   get_repo_name "git@github.com:hybridgroup/cylon.git"
+#   #=> "cylon"
+#
+# Returns a string
+def get_repo_name(uri)
+  uri.slice(/.*\/(.*).git/, 1)
+end
+
+# Public: Uses the git gem to clone down a remote git repository
+#
+# uri - string URI of remote git repo to clone down
+#
+# Returns an array containing the path to the cloned repository, and the Git
+# repository instance
+def clone_repo(uri)
+  name = get_repo_name(uri)
+  path = File.expand_path("#{File.dirname(__FILE__)}/../.tomdoc/#{name}")
+
+  remove_repo(path) if File.directory?(path)
+
+  puts "  - Cloning #{name}."
+  repo = Git.clone(uri, path)
+  return [path, repo]
+end
+
+# Public: Removes the existing git repository
+#
+# path - path to git repository to remove
+#
+# Returns nothing
+def remove_repo(path)
+  FileUtils.rm_r path
+end
+
+def extract_tomdoc_from_repo(dir)
+  comments = {}
+  Dir.glob(dir + "/src/**/*.coffee") do |filename|
+    srcdir = File.basename(dir) + "\/src\/"
+    printable = filename[/#{srcdir}(.*)/, 1]
+    puts "  - Extracting comments from #{printable}"
+
+    lines = IO.readlines(filename)
+    comments[filename] = []
+
+    while line = lines.shift do
+      if comment_line = line[BLOCK_COMMENT_REGEX, 1]
+        comment = [comment_line]
+
+        loop do
+          next_line = lines.shift
+
+          if comment_line = next_line[BLOCK_COMMENT_REGEX, 1]
+            comment << comment_line
+          else
+            break
+          end
+        end
+
+        comments[filename] << comment.join("\n") if comment.length > 1
+      end
+    end
+  end
+
+  comments.select { |file, comments| comments.any? }
+end
+
+def parse_comments(comments)
+  comments.each do |file, comments|
+    comments.collect! { |comment| TomParse.parse comment }
+    comments.select! { |comment| comment.returns.any? }
+  end
+end
+
+def main
+  puts "Importing TomDoc documentation from repositories."
+
+  REPOS.each do |repo|
+    puts "Importing docs from #{get_repo_name(repo)}."
+    path, repo = clone_repo repo
+    comments = extract_tomdoc_from_repo path
+    parsed_comments = parse_comments comments
+    remove_repo path
+  end
+end
+
+main
