@@ -7,7 +7,8 @@ var Program = require('commander'),
 
 Program
   .version(Pkg.version)
-  .usage('[command] [options]');
+  .usage('[command] [options]')
+  .option('-d, --detached', 'Runs some commands in detached mode');
 
 Program
   .command("generate <name>")
@@ -22,21 +23,23 @@ Program
   });
 
 Program
-  .command("bluetooth <subcmd> <address> [option]")
+  .command("bluetooth <subcmd> [address] [device]")
   .description("Connect bluetooth device to PC (pairs) or establishes serial to bluetooth connection")
-  .action(function(subcmd, address, option){
+  .action(function(subcmd, address, device){
+    console.log("detached ===>")
     switch(subcmd){
     case 'pair':
-      option = (option === null || option === undefined) ? 'hci0' : option;
-      CliCommands.bluetooth.pair(option, address);
+      device = (device === null || device === undefined) ? 'hci0' : device;
+      CliCommands.bluetooth.pair(device, address);
       break;
     case 'unpair':
-      option = (option === null || option === undefined) ? 'hci0' : option;
-      CliCommands.bluetooth.unpair(option, address);
+      device = (device === null || device === undefined) ? 'hci0' : device;
+      CliCommands.bluetooth.unpair(device, address);
       break;
     case 'connect':
-      option = (option === null || option === undefined) ? '/dev/rfcomm0' : option;
-      CliCommands.connectToSerial(option, address);
+      device = (device === null || device === undefined) ? '/dev/rfcomm0' : device;
+      var detached = (Program.detached != undefined && Program.detached != null) ? Program.detached : false
+      CliCommands.connect.toSerial(device, address, detached);
       break;
     default:
       console.log("cylon bluetooth argument not recognized, try:\n");

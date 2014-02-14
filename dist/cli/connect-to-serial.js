@@ -1,17 +1,27 @@
 (function() {
-  var connectToSerial, os;
+  var Connect, os, toSerial;
 
   require("./process");
 
   os = require('os');
 
-  connectToSerial = function(dev, address) {
+  Connect = toSerial = function(dev, address, detached) {
     var platform, process;
+    if (detached == null) {
+      detached = false;
+    }
     process = new Cylon.Process;
     platform = os.platform();
     switch (platform) {
       case 'linux':
-        return process.spawn('sudo', ['rfcomm', 'connect', dev, address, '1']);
+        if (detached) {
+          return process.spawn('sudo', ['rfcomm', 'connect', dev, address, '1'], {
+            detached: detached
+          });
+        } else {
+          return process.spawn('sudo', ['rfcomm', 'connect', dev, address, '1']);
+        }
+        break;
       case 'darwin':
         return console.log("OS X manages binding itself.");
       default:
@@ -19,6 +29,6 @@
     }
   };
 
-  module.exports = connectToSerial;
+  module.exports = Connect;
 
 }).call(this);

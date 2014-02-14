@@ -1,10 +1,11 @@
 scan = require('./scan')
-connectToSerial = require('./connect-to-serial')
+connect = require('./connect-to-serial')
 bluetooth = require('./bluetooth')
 
 cliCommands =
   scan: scan
-  connectToSerial: connectToSerial
+  connect:
+    toSerial: connect.toSerial
   bluetooth:
     pair: bluetooth.pair
     unpair: bluetooth.unpair
