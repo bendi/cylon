@@ -2,7 +2,7 @@ require "./process"
 os = require 'os'
 
 Connect =
-  toSerial = (dev, address, detached = false) ->
+  toSerial: (dev, address, detached = false) ->
     process = new Cylon.Process
     platform = os.platform()
 
